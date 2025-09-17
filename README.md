@@ -1,36 +1,85 @@
 # CrossNet
 
-A fast and efficient network discovery tool written in Go that performs ping and ARP scans on Windows and Linux systems.
+A comprehensive network discovery tool written in Go that performs advanced ping and ARP scans with web GUI and CLI interfaces.
 
-## Features
+## ✨ Features
 
-- **Cross-platform**: Works on Windows, Linux, and macOS
-- **Ping scanning**: Fast ICMP ping sweep with customizable timeout
-- **ARP scanning**: ARP table enumeration and network scanning
-- **Multi-threaded**: Concurrent scanning for better performance
-- **Hostname resolution**: Automatic reverse DNS lookup
-- **Flexible output**: Console output with optional file export
+### Core Functionality
+- **🌐 Cross-platform**: Works on Windows, Linux, and macOS
+- **🔍 Dual Interface**: Web GUI and CLI versions
+- **⚡ Multi-threaded**: Concurrent scanning for maximum performance
+- **📊 Dual Scan Types**: ICMP ping and ARP scanning
+- **🏠 Smart Hostname Resolution**: Multiple methods including reverse DNS, NetBIOS, mDNS, and hosts file
+- **💾 Export Options**: CSV and JSON export with detailed metrics
 
-## Installation
+### Advanced Features
+- **🎯 Intelligent Network Detection**: Auto-detect current IP and network range
+- **⚡ Result Caching**: Smart hostname caching for faster repeat scans
+- **📈 Real-time Progress**: Live scan progress with WebSocket updates
+- **🔧 Configurable**: Adjustable timeout, thread count, and scan parameters
+- **📱 Responsive UI**: Modern web interface that works on any device
 
-### Build from source
+## 🚀 Quick Start
 
+### Prerequisites
+
+**Go 1.19+ required** for building from source.
+
+**System Dependencies:**
+- **Linux**: `ip` command (usually pre-installed)
+- **Windows**: No additional dependencies
+- **macOS**: No additional dependencies
+
+**Optional Enhancement Tools:**
+- **Linux**: `nmblookup` (for NetBIOS resolution), `avahi-resolve` (for mDNS)
+- **Windows**: Built-in `nbtstat` and `arp` commands
+- **macOS**: Built-in `dns-sd` command
+
+### Installation
+
+#### Option 1: Build from Source
 ```bash
 git clone https://github.com/CyberOakAlpha/CrossNet.git
 cd CrossNet
-go build -o crossnet cmd/crossnet/main.go
+make all  # Builds both CLI and GUI versions
 ```
 
-### Download binary
+#### Option 2: Download Pre-built Binaries
+Download from the [releases page](https://github.com/CyberOakAlpha/CrossNet/releases):
 
-Download the latest release from the [releases page](https://github.com/CyberOakAlpha/CrossNet/releases).
+**Windows:**
+- `crossnet-windows-amd64.exe` + `crossnet-gui-windows-amd64.exe` (64-bit Intel/AMD)
+- `crossnet-windows-arm64.exe` + `crossnet-gui-windows-arm64.exe` (ARM64 - Surface Pro X, etc.)
 
-## Usage
+**Linux:**
+- `crossnet-linux-amd64` + `crossnet-gui-linux-amd64` (64-bit Intel/AMD)
+- `crossnet-linux-arm64` + `crossnet-gui-linux-arm64` (ARM64 - Raspberry Pi 4, etc.)
+- `crossnet-linux-armv7` + `crossnet-gui-linux-armv7` (ARMv7 - Raspberry Pi 3, etc.)
 
-### Basic usage
+**macOS:**
+- `crossnet-darwin-amd64` + `crossnet-gui-darwin-amd64` (Intel Mac)
+- `crossnet-darwin-arm64` + `crossnet-gui-darwin-arm64` (Apple Silicon - M1/M2/M3)
+
+**Checksums:** `SHA256SUMS` file provided for verification
+
+## 💻 Usage
+
+### Web GUI (Recommended)
 
 ```bash
-# Scan default network (192.168.1.0/24) with both ping and ARP
+# Start web interface
+./crossnet-gui
+
+# Or specify custom port
+./crossnet-gui -p 8080
+```
+
+Then open http://localhost:8080 in your browser for the full-featured web interface.
+
+### CLI Usage
+
+```bash
+# Scan default network with both ping and ARP
 ./crossnet
 
 # Ping scan only
@@ -56,15 +105,34 @@ Download the latest release from the [releases page](https://github.com/CyberOak
     --verbose    Verbose output (shows offline hosts)
 ```
 
-### Examples
+### Platform-Specific Examples
 
+**Linux/macOS:**
 ```bash
 # Quick ping scan of local network
 ./crossnet -s ping
 
+# Start web GUI
+./crossnet-gui -p 8080
+
 # Comprehensive scan with high thread count
 ./crossnet -n 192.168.0.0/24 -s both -T 200
+```
 
+**Windows:**
+```cmd
+# Quick ping scan of local network
+crossnet-gui.exe
+
+# Start web GUI (open http://localhost:8080)
+crossnet-gui.exe -p 8080
+
+# CLI scan
+crossnet.exe -n 192.168.1.0/24 -s both
+```
+
+**Cross-platform Features:**
+```bash
 # Save results to file
 ./crossnet -n 10.0.0.0/16 -o network_scan.txt
 
