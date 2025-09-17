@@ -3,12 +3,12 @@ package scanner
 import (
 	"bufio"
 	"fmt"
-	"net"
 	"os/exec"
 	"regexp"
 	"strings"
 	"sync"
 
+	"github.com/CyberOakAlpha/CrossNet/internal/hostname"
 	"github.com/CyberOakAlpha/CrossNet/internal/osdetect"
 )
 
@@ -22,12 +22,14 @@ type ARPEntry struct {
 }
 
 type ARPScanner struct {
-	threads int
+	threads  int
+	resolver *hostname.HostnameResolver
 }
 
 func NewARPScanner(threads int) *ARPScanner {
 	return &ARPScanner{
-		threads: threads,
+		threads:  threads,
+		resolver: hostname.NewHostnameResolver(),
 	}
 }
 
@@ -76,7 +78,9 @@ func (as *ARPScanner) GetARPTable() ([]ARPEntry, error) {
 	switch osdetect.DetectOS() {
 	case osdetect.Windows:
 		cmd = exec.Command("arp", "-a")
-	case osdetect.Linux, osdetect.Darwin:
+	case osdetect.Linux:
+		cmd = exec.Command("ip", "neigh", "show")
+	case osdetect.Darwin:
 		cmd = exec.Command("arp", "-a")
 	default:
 		return nil, fmt.Errorf("unsupported operating system")
@@ -114,17 +118,17 @@ func (as *ARPScanner) scanHost(ip string) ARPEntry {
 	}
 
 	outputStr := string(output)
-	if strings.Contains(outputStr, "TTL=") || strings.Contains(outputStr, "ttl=") ||
-		strings.Contains(outputStr, "time=") || strings.Contains(outputStr, "time<") {
+	outputLower := strings.ToLower(outputStr)
+	if strings.Contains(outputLower, "ttl=") ||
+		strings.Contains(outputLower, "time=") ||
+		strings.Contains(outputLower, "time<") ||
+		strings.Contains(outputStr, "bytes from") {
 		entry.Online = true
 
 		mac, _ := as.getMACForIP(ip)
 		entry.MAC = mac
 
-		hostname, _ := net.LookupAddr(ip)
-		if len(hostname) > 0 {
-			entry.Hostname = hostname[0]
-		}
+		entry.Hostname = as.resolver.Resolve(ip)
 	}
 
 	return entry
@@ -136,7 +140,9 @@ func (as *ARPScanner) getMACForIP(ip string) (string, error) {
 	switch osdetect.DetectOS() {
 	case osdetect.Windows:
 		cmd = exec.Command("arp", "-a", ip)
-	case osdetect.Linux, osdetect.Darwin:
+	case osdetect.Linux:
+		cmd = exec.Command("ip", "neigh", "show", ip)
+	case osdetect.Darwin:
 		cmd = exec.Command("arp", "-n", ip)
 	default:
 		return "", fmt.Errorf("unsupported operating system")
@@ -162,10 +168,7 @@ func (as *ARPScanner) parseARPOutput(output string) []ARPEntry {
 
 		entry := as.parseARPLine(line)
 		if entry.IP != "" && entry.MAC != "" {
-			hostname, _ := net.LookupAddr(entry.IP)
-			if len(hostname) > 0 {
-				entry.Hostname = hostname[0]
-			}
+			entry.Hostname = as.resolver.Resolve(entry.IP)
 			entry.Online = true
 			entries = append(entries, entry)
 		}
@@ -185,7 +188,15 @@ func (as *ARPScanner) parseARPLine(line string) ARPEntry {
 			entry.IP = matches[1]
 			entry.MAC = strings.ToUpper(strings.Replace(matches[2], "-", ":", -1))
 		}
-	case osdetect.Linux, osdetect.Darwin:
+	case osdetect.Linux:
+		// Parse ip neigh output: "10.1.0.31 dev wlp0s20f3 lladdr a8:03:2a:b8:1d:14 STALE"
+		re := regexp.MustCompile(`(\d+\.\d+\.\d+\.\d+)\s+dev\s+\w+\s+lladdr\s+([0-9a-fA-F:]{17})`)
+		matches := re.FindStringSubmatch(line)
+		if len(matches) >= 3 {
+			entry.IP = matches[1]
+			entry.MAC = strings.ToUpper(matches[2])
+		}
+	case osdetect.Darwin:
 		re := regexp.MustCompile(`.*\((\d+\.\d+\.\d+\.\d+)\) at ([0-9a-fA-F:]{17})`)
 		matches := re.FindStringSubmatch(line)
 		if len(matches) >= 3 {

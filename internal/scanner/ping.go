@@ -9,6 +9,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/CyberOakAlpha/CrossNet/internal/hostname"
 	"github.com/CyberOakAlpha/CrossNet/internal/osdetect"
 )
 
@@ -24,12 +25,14 @@ type PingScanner struct {
 	timeout  time.Duration
 	threads  int
 	protocol string
+	resolver *hostname.HostnameResolver
 }
 
 func NewPingScanner(timeout time.Duration, threads int) *PingScanner {
 	return &PingScanner{
-		timeout: timeout,
-		threads: threads,
+		timeout:  timeout,
+		threads:  threads,
+		resolver: hostname.NewHostnameResolver(),
 	}
 }
 
@@ -75,10 +78,7 @@ func (ps *PingScanner) pingHost(ip string) PingResult {
 		Alive: false,
 	}
 
-	hostname, _ := net.LookupAddr(ip)
-	if len(hostname) > 0 {
-		result.Hostname = hostname[0]
-	}
+	result.Hostname = ps.resolver.Resolve(ip)
 
 	var cmd *exec.Cmd
 	start := time.Now()
@@ -106,8 +106,11 @@ func (ps *PingScanner) pingHost(ip string) PingResult {
 	}
 
 	outputStr := string(output)
-	if strings.Contains(outputStr, "TTL=") || strings.Contains(outputStr, "ttl=") ||
-		strings.Contains(outputStr, "time=") || strings.Contains(outputStr, "time<") {
+	outputLower := strings.ToLower(outputStr)
+	if strings.Contains(outputLower, "ttl=") ||
+		strings.Contains(outputLower, "time=") ||
+		strings.Contains(outputLower, "time<") ||
+		strings.Contains(outputStr, "bytes from") {
 		result.Alive = true
 	}
 

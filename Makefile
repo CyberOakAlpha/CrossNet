@@ -2,36 +2,46 @@
 
 # Build variables
 BINARY_NAME=crossnet
+GUI_BINARY_NAME=crossnet-gui
 BUILD_DIR=build
 VERSION=1.0.0
 LDFLAGS=-ldflags "-X main.version=$(VERSION)"
 
 # Default target
-all: clean build
+all: clean build build-gui
 
-# Build for current platform
+# Build CLI for current platform
 build:
-	@echo "Building CrossNet for current platform..."
+	@echo "Building CrossNet CLI for current platform..."
 	@mkdir -p $(BUILD_DIR)
 	go build $(LDFLAGS) -o $(BUILD_DIR)/$(BINARY_NAME) cmd/crossnet/main.go
+
+# Build GUI for current platform
+build-gui:
+	@echo "Building CrossNet GUI for current platform..."
+	@mkdir -p $(BUILD_DIR)
+	go build $(LDFLAGS) -o $(BUILD_DIR)/$(GUI_BINARY_NAME) cmd/crossnet-gui/main.go
 
 # Build for Windows
 windows:
 	@echo "Building CrossNet for Windows..."
 	@mkdir -p $(BUILD_DIR)
 	GOOS=windows GOARCH=amd64 go build $(LDFLAGS) -o $(BUILD_DIR)/$(BINARY_NAME)-windows-amd64.exe cmd/crossnet/main.go
+	GOOS=windows GOARCH=amd64 go build $(LDFLAGS) -o $(BUILD_DIR)/$(GUI_BINARY_NAME)-windows-amd64.exe cmd/crossnet-gui/main.go
 
 # Build for Linux
 linux:
 	@echo "Building CrossNet for Linux..."
 	@mkdir -p $(BUILD_DIR)
 	GOOS=linux GOARCH=amd64 go build $(LDFLAGS) -o $(BUILD_DIR)/$(BINARY_NAME)-linux-amd64 cmd/crossnet/main.go
+	GOOS=linux GOARCH=amd64 go build $(LDFLAGS) -o $(BUILD_DIR)/$(GUI_BINARY_NAME)-linux-amd64 cmd/crossnet-gui/main.go
 
 # Build for macOS
 darwin:
 	@echo "Building CrossNet for macOS..."
 	@mkdir -p $(BUILD_DIR)
 	GOOS=darwin GOARCH=amd64 go build $(LDFLAGS) -o $(BUILD_DIR)/$(BINARY_NAME)-darwin-amd64 cmd/crossnet/main.go
+	GOOS=darwin GOARCH=amd64 go build $(LDFLAGS) -o $(BUILD_DIR)/$(GUI_BINARY_NAME)-darwin-amd64 cmd/crossnet-gui/main.go
 
 # Build for all platforms
 cross-compile: windows linux darwin
